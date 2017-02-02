@@ -52,6 +52,21 @@ avgsteps[which(avgsteps$meansteps == max(avgsteps$meansteps)), ]
 ##   interval    meansteps
 ##     835       206.1698
 
+## Input missing NAs...see Mac R file.
 
+
+## Create a new factor variable classifying each day as either a weekday or weekend. 
+library(lubridate)
+activityrm$day <- wday(activityrm$date)
+activityrm$wkdy <- ifelse(activityrm$day == "Mon" | activity$day == "Tues" | activity$day == "Wed" | 
+                            activity$day == "Thurs" | activity$day == "Fri", "Weekday", "Weekend")
+activityrm$wkdy <- factor(activityrm$wkdy)
+
+## Plot in two panels the average number of steps taken by interval. One panel should be weekdays and the other weekend days. 
+
+# wkdys <- subset(activityrm, wkdy == "Weekday")
+                
+actrmavg <- summarize(group_by(activityrm, interval), meansteps = mean(steps, na.rm = T))
+What exactly does the plot want on it????
 
 
