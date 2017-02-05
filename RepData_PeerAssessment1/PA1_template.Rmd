@@ -1,0 +1,122 @@
+---
+title: "Reproducible Research Project 1"
+author: "Clark Porter"
+date: "2/5/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+```
+
+## Loading and preprocessing the data
+
+```{r Data}
+setwd("~/Desktop/Coursera/GitHub/RepData_PeerAssessment1")
+activity <- read.csv("activity.csv")
+```
+
+***
+
+## What is mean total number of steps taken per day?
+
+The number of steps per day is logged in the 'steps' column of spd. There are many missing and 0 values in the data.
+```{r Steps per Day}
+spd <- summarize(group_by(activity, date), steps = sum(steps, na.rm = T))
+head(spd)
+```
+
+A histogram showing the total number of steps taken per day. 
+```{r Steps per Day Histo}
+hist(spd$steps, breaks = 15, xlab = "Steps per Day", main = "Steps Per Day", col = "dodgerblue")
+```
+```{r Steps per Day Summary}
+summary(spd$steps)
+```
+The mean is 9354 steps per day and the median is 10400 steps per day. 
+
+***
+
+## What is the average daily activity pattern?
+
+```{r Avg Steps per Day}
+avgsteps <- summarize(group_by(activity, interval), meansteps = mean(steps, na.rm = T))
+```
+A time series plot of the intervals and average number of steps taken across all days.
+```{r Avg Steps per Day plot}
+ggplot(data = avgsteps, aes(interval, meansteps)) +
+  geom_line(lwd = 1, color = "dodgerblue") +
+  xlab("Interval") + 
+  ylab("Average Number of Steps") +
+  ggtitle("Average Number of Steps Across All Days") + 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+```{r Max steps interval}
+avgsteps[which(avgsteps$meansteps == max(avgsteps$meansteps)), ]
+```
+The interval 835 contains the maximum number of steps.
+
+***
+
+## Imputing missing values
+
+```{r Nas steps}
+sum(is.na(activity$steps))
+```
+The total number of NAs in the steps column is 2304.
+```{r Nas interval}
+sum(is.na(activity$interval))
+```
+The total number of NAs in the interval column is 0.
+```{r Nas date}
+sum(is.na(activity$date))
+```
+The total number of NAs in the date column is 0.
+
+Replace the NA values in the data. I will replace each NA in the steps column with the average number of steps across all dates for the given interval. activityrm is the data without NAs.
+```{r Nas remove}
+activityrm <- activity
+for (i in 1:nrow(activity)){
+  if (is.na(activity$steps[i])){
+    activityrm$steps[i] <- avgsteps[which(avgsteps$interval == activity$interval[i]), 2]
+  }
+}
+```
+A histogram of the data without NAs. This shows the new Steps per day.
+```{r Nas remove histo}
+activityrm$steps <- as.numeric(activityrm$steps)
+spdrm <- summarize(group_by(activityrm, date), steps = sum(steps))
+hist(spdrm$steps, breaks = 15, xlab = "Steps per Day", main = "Steps Per Day", col = "dodgerblue")
+```
+```{r Nas remove steps mean}
+summary(spdrm$steps)
+```
+The mean number of steps is the 10770 per day with missing values removed and the median number of steps is 10770 per day with missing values removed. The mean and median steps per day both have risen with the removal of the NA values. 
+
+***
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+Below a new column, class factor, labeling each day a weekday or weekend day.
+```{r weekdays}
+activityrm$day <- wday(activityrm$date)
+activityrm$wkdy <- ifelse(activityrm$day == 7 | activityrm$day == 1, "Weekend", "Weekday")
+activityrm$wkdy <- factor(activityrm$wkdy)
+head(activityrm)
+```
+Plot the intervals and average number of steps plotted for weekends and for weekday separately. 
+```{r weekdays plot}
+actrmavg <- aggregate(steps ~ interval + wkdy, data=activityrm, mean)
+ggplot(actrmavg, aes(interval, steps)) + 
+    geom_line() + 
+    facet_grid(wkdy ~ .) +
+    xlab("5-minute Interval") + 
+    ylab("Average Number of Steps")
+```
+
