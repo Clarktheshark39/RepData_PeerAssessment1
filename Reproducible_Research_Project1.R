@@ -1,6 +1,9 @@
 ## Coursera, Reproducible Research, Week 2, Project:
 ## Old school download to computer first, then read into program.
-setwd("C:/Users/cporter01/Downloads")
+# on PC
+setwd("C:/Users/cporter01/Downloads") 
+# on Mac
+setwd("~/Downloads")
 activity <- read.csv("activity.csv")
 
 ## Attempt to download data directly from the link/website...does not work currently.
@@ -52,21 +55,43 @@ avgsteps[which(avgsteps$meansteps == max(avgsteps$meansteps)), ]
 ##   interval    meansteps
 ##     835       206.1698
 
-## Input missing NAs...see Mac R file.
+## Report the total number of NAs in the dataset. 
+## In the steps column:
+sum(is.na(activity$steps))
+## In the interval column:
+sum(is.na(activity$interval))
+## In the date column:
+sum(is.na(activity$date))
 
+## Replace the NA values in the data. I will replace each NA in the steps column with the average
+## number of steps across all dates for the given interval. activityrm is the data without NAs.
+activityrm <- activity
+for (i in 1:nrow(activity)){
+  if (is.na(activity$steps[i])){
+    activityrm$steps[i] <- avgsteps[which(avgsteps$interval == activity$interval[i]), 2]
+  }
+}
+## Plot a histogram off the data without NAs. This shows the new Steps per day.
+activityrm$steps <- as.numeric(activityrm$steps)
+spdrm <- summarize(group_by(activityrm, date), steps = sum(steps))
+hist(spdrm$steps, breaks = 15, xlab = "Steps per Day", main = "Steps Per Day", col = "dodgerblue")
+summary(spdrm$steps)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 41    9819   10770   10770   12810   21190 
 
 ## Create a new factor variable classifying each day as either a weekday or weekend. 
 library(lubridate)
 activityrm$day <- wday(activityrm$date)
-activityrm$wkdy <- ifelse(activityrm$day == "Mon" | activity$day == "Tues" | activity$day == "Wed" | 
-                            activity$day == "Thurs" | activity$day == "Fri", "Weekday", "Weekend")
+activityrm$wkdy <- ifelse(activityrm$day == 7 | activityrm$day == 1, "Weekend", "Weekday")
 activityrm$wkdy <- factor(activityrm$wkdy)
 
 ## Plot in two panels the average number of steps taken by interval. One panel should be weekdays and the other weekend days. 
+actrmavg <- aggregate(steps ~ interval + wkdy, data=activityrm, mean)
+ggplot(actrmavg, aes(interval, steps)) + 
+  geom_line() + 
+  facet_grid(wkdy ~ .) +
+  xlab("5-minute Interval") + 
+  ylab("Average Number of Steps")
 
-# wkdys <- subset(activityrm, wkdy == "Weekday")
-                
-actrmavg <- summarize(group_by(activityrm, interval), meansteps = mean(steps, na.rm = T))
-What exactly does the plot want on it????
 
 
